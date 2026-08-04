@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ClickRush Mini-App</title>
+    <!-- تلگرام SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- فونت وزیرمتن -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <!-- آیکون‌های Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-dark: #0a0d14;
+            --accent-cyan: #06b6d4;
+            --accent-glow: #00f2ff;
+            --accent-purple: #7c3aed;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-card: rgba(18, 24, 38, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+            font-family: 'Vazirmatn', sans-serif;
+            color: #ffffff;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px env(safe-area-inset-bottom, 16px) 16px;
+            background-image:
+                radial-gradient(circle at 50% 30%, rgba(6, 182, 212, 0.25) 0%, rgba(124, 58, 237, 0.1) 50%, transparent 80%);
+        }
+
+        /* ساختار صفحات Tab */
+        .tab-view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            animation: fadeIn 0.25s ease;
+        }
+        .tab-view.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Squad بالای صفحه */
+        .squad-btn {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 6px 18px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* هدر موجودی و رتبه */
+        .balance-header {
+            text-align: center;
+            margin-top: 5px;
+        }
+        .balance-val-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 46px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            text-shadow: 0 0 25px rgba(6, 182, 212, 0.5);
+        }
+        .coin-icon-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.6);
+        }
+        .rank-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #cbd5e1;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+        .league-badge {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(6, 182, 212, 0.15);
+            padding: 3px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        /* سکه اصلی */
+        .tap-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            margin: auto 0;
+        }
+        .coin-outer-ring {
+            width: clamp(230px, 62vw, 280px);
+            height: clamp(230px, 62vw, 280px);
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.8), rgba(124, 58, 237, 0.5));
+            padding: 12px;
+            box-shadow: 0 0 60px rgba(6, 182, 212, 0.35), inset 0 0 20px rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: transform 0.05s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .coin-inner-ring {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #0e1726, #060911);
+            border: 3px solid rgba(6, 182, 212, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9);
+        }
+        .coin-logo {
+            width: 50%;
+            height: 50%;
+            fill: none;
+            stroke: var(--accent-glow);
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.8));
+        }
+        .coin-outer-ring:active { transform: scale(0.94); }
+
+        .float-num {
+            position: absolute;
+            font-size: 34px;
+            font-weight: 900;
+            color: #ffffff;
+            pointer-events: none;
+            animation: floatFade 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            z-index: 100;
+            text-shadow: 0 0 16px var(--accent-cyan);
+        }
+        @keyframes floatFade {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-75px) scale(1.2); }
+        }
+
+        /* صفحات اختصاصی */
+        .page-container {
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-top: 10px;
+            overflow-y: auto;
+        }
+        .page-title {
+            font-size: 22px;
+            font-weight: 900;
+            color: #fff;
+            text-align: center;
+        }
+        .card-item {
+            background: var(--glass-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .card-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(6, 182, 212, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-cyan);
+        }
+        .btn-action {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+        .btn-action:active { transform: scale(0.95); }
+
+        .code-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px dashed var(--accent-cyan);
+            border-radius: 14px;
+            padding: 12px;
+            text-align: center;
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: 6px;
+            color: var(--accent-glow);
+            margin: 10px 0;
+            user-select: all;
+        }
+
+        .input-code {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px 14px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 14px;
+            text-align: center;
+            text-transform: uppercase;
+            outline: none;
+        }
+
+        /* نوار پایینی مشترک */
+        .bottom-container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: auto;
+        }
+        .energy-wrapper {
+            background: var(--glass-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 10px 14px;
+        }
+        .energy-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .energy-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 15px;
+            font-weight: 800;
+        }
+        .energy-bar-track {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .energy-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+            border-radius: 20px;
+            transition: width 0.15s ease;
+        }
+
+        .nav-dock {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            background: var(--glass-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 6px;
+        }
+        .nav-item {
+            padding: 10px 0;
+            border-radius: 14px;
+            font-size: 11px;
+            color: #94a3b8;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+        .nav-item.active {
+            background: rgba(6, 182, 212, 0.2);
+            color: var(--accent-cyan);
+            font-weight: 700;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+
+        /* مودال مدال‌ها */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: flex-end;
+            z-index: 999;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-card {
+            width: 100%; max-width: 440px;
+            background: #0f172a;
+            border-top: 1px solid var(--glass-border);
+            border-radius: 28px 28px 0 0;
+            padding: 24px 20px 32px 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .modal-overlay.active .modal-card { transform: translateY(0); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .close-btn { background: rgba(255,255,255,0.1); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; }
+
+        .medal-item {
+            display: flex; align-items: center; gap: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px; padding: 12px 16px; margin-bottom: 10px;
+        }
+        .medal-item.current { border-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1); }
+        .status-tag { font-size: 10px; padding: 2px 8px; border-radius: 8px; background: var(--accent-cyan); color: #000; font-weight: 800; }
+    </style>
+</head>
+<body>
+
+    <!-- ================= ۱. آیتم کلیک (صفحه اصلی) ================= -->
+    <div id="tabClick" class="tab-view active">
+        <div class="squad-btn">
+            <span>Join Squad</span>
+            <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+        </div>
+
+        <div class="balance-header">
+            <div class="balance-val-box">
+                <div class="coin-icon-small">
+                    <i data-lucide="zap" style="width: 22px; height: 22px; color: #fff;"></i>
+                </div>
+                <span class="global-balance">0</span>
+            </div>
+            <div class="rank-info">
+                <span>21,384th</span>
+                <span>•</span>
+                <div class="league-badge" onclick="openMedalsModal()">
+                    <span id="currentMedalIcon">🥉</span>
+                    <span id="currentMedalName" style="color: var(--accent-cyan);">Bronze</span>
+                    <i data-lucide="chevron-left" style="width: 14px; height: 14px; color: var(--accent-cyan);"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="tap-wrapper">
+            <div class="coin-outer-ring" id="tapBtn">
+                <div class="coin-inner-ring">
+                    <svg class="coin-logo" viewBox="0 0 100 100">
+                        <polygon points="50,15 20,75 45,75" />
+                        <polygon points="50,15 80,75 55,75" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= ۳. آیتم ارتقا (قابلیت‌ها) ================= -->
+    <div id="tabUpgrade" class="tab-view">
+        <div class="page-container">
+            <div class="page-title">⚡ ارتقا و بوسترها</div>
+            <p style="text-align: center; color: #94a3b8; font-size: 13px;">تجهیزات خود را برای دریافت سکه بیشتر ارتقا دهید</p>
+           
+            <div class="card-item">
+                <div class="card-info">
+                    <div class="card-icon"><i data-lucide="mouse-pointer-click"></i></div>
+                    <div>
+                        <div style="font-weight: 800;">Multitap</div>
+                        <div style="font-size: 12px; color: #94a3b8;">+۱ سکه به ازای هر کلیک</div>
+                        <div style="font-size: 12px; color: var(--accent-cyan); font-weight: 700; margin-top: 2px;">سطح: <span id="tapLvl">1</span></div>
+                    </div>
+                </div>
+                <button class="btn-action" id="btnMultitap" onclick="buyMultitap()">۲۰۰ سکه</button>
+            </div>
+
+            <div class="card-item">
+                <div class="card-info">
+                    <div class="card-icon"><i data-lucide="battery-charging"></i></div>
+                    <div>
+                        <div style="font-weight: 800;">Max Energy</div>
+                        <div style="font-size: 12px; color: #94a3b8;">+۵۰۰ انرژی حداکثر</div>
+                        <div style="font-size: 12px; color: var(--accent-cyan); font-weight: 700; margin-top: 2px;">ظرفیت: <span id="maxEnergyVal">1,000</span></div>
+                    </div>
+                </div>
+                <button class="btn-action" id="btnEnergy" onclick="buyEnergyLimit()">۵۰۰ سکه</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= ۴. آیتم رفرال (کد 5 رقمی) ================= -->
+    <div id="tabReferral" class="tab-view">
+        <div class="page-container">
+            <div class="page-title">👥 سیستم رفرال</div>
+            <p style="text-align: center; color: #94a3b8; font-size: 13px;">کد خود را به دوستان دهید و با ثبت آن <b>۵۰۰ سکه هدیه</b> بگیرید!</p>
+           
+            <div style="background: var(--glass-card); border: 1px solid var(--glass-border); border-radius: 18px; padding: 16px; text-align: center;">
+                <div style="font-size: 13px; color: #cbd5e1;">کد ۵ رقمی اختصاصی شما:</div>
+                <div class="code-box" id="myRefCode">----</div>
+                <button class="btn-action" style="width: 100%;" onclick="copyRefCode()">کپی کد دعوت</button>
+            </div>
+
+            <div id="refInputContainer" style="background: var(--glass-card); border: 1px solid var(--glass-border); border-radius: 18px; padding: 16px; margin-top: 10px;">
+                <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 8px;">ثبت کد رفرال دوستان (تنها یک‌بار):</div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="friendCodeInput" class="input-code" placeholder="مثلاً: A7K9X" maxlength="5">
+                    <button class="btn-action" onclick="claimRefCode()">ثبت</button>
+                </div>
+            </div>
+
+            <div id="refSuccessBadge" style="display: none; background: rgba(6, 182, 212, 0.15); border: 1px solid var(--accent-cyan); border-radius: 16px; padding: 14px; text-align: center; color: var(--accent-glow); font-weight: 700;">
+                ✅ شما قبلاً کد رفرال ثبت کرده و ۵۰۰ سکه هدیه دریافت نموده‌اید.
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= نوار پایینی (۴ آیتم اصلی) ================= -->
+    <div class="bottom-container">
+        <div class="energy-wrapper">
+            <div class="energy-header">
+                <div class="energy-status">
+                    <i data-lucide="zap" style="color: var(--accent-cyan); fill: var(--accent-cyan); width: 18px;"></i>
+                    <span id="currentEnergy">1,000</span>
+                    <span style="font-size: 12px; color: #64748b; font-weight: 600;">/ <span id="maxEnergy">1,000</span></span>
+                </div>
+                <span style="font-size: 11px; color: #94a3b8;">بازیابی: ۳/ثانیه</span>
+            </div>
+            <div class="energy-bar-track">
+                <div class="energy-bar-fill" id="energyBar"></div>
+            </div>
+        </div>
+
+        <div class="nav-dock">
+            <div id="navClick" class="nav-item active" onclick="switchTab('tabClick', this)">
+                <i data-lucide="gamepad-2"></i>
+                <span>کلیک</span>
+            </div>
+            <div id="navMedals" class="nav-item" onclick="openMedalsModal(this)">
+                <i data-lucide="trophy"></i>
+                <span>مدال‌ها</span>
+            </div>
+            <div id="navUpgrade" class="nav-item" onclick="switchTab('tabUpgrade', this)">
+                <i data-lucide="rocket"></i>
+                <span>ارتقا</span>
+            </div>
+            <div id="navReferral" class="nav-item" onclick="switchTab('tabReferral', this)">
+                <i data-lucide="users"></i>
+                <span>رفرال</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= مودال اختصاصی مدال‌ها ================= -->
+    <div class="modal-overlay" id="medalsModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div style="font-size: 18px; font-weight: 800; color: #fff;">سطح‌ها و مدال‌ها 🏆</div>
+                <button class="close-btn" onclick="closeMedalsModal()">✕</button>
+            </div>
+            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 16px;">
+                شرایط دستیابی به مدال‌ها بر اساس میزان سکه‌های شما:
+            </p>
+            <div>
+                <div class="medal-item" id="medalCardBronze">
+                    <div style="font-size: 30px;">🥉</div>
+                    <div style="flex:1;">
+                        <div style="font-weight: 800; font-size: 15px;">
+                            مدال برنز (Bronze)
+                            <span class="status-tag" id="tagBronze" style="display: none;">فعلی</span>
+                        </div>
+                        <div style="font-size: 12px; color: #94a3b8;">شرط: ۵,۰۰۰ سکه یا کمتر</div>
+                    </div>
+                </div>
+                <div class="medal-item" id="medalCardSilver">
+                    <div style="font-size: 30px;">🥈</div>
+                    <div style="flex:1;">
+                        <div style="font-weight: 800; font-size: 15px;">
+                            مدال نقره (Silver)
+                            <span class="status-tag" id="tagSilver" style="display: none;">فعلی</span>
+                        </div>
+                        <div style="font-size: 12px; color: #94a3b8;">شرط: از ۵,۰۰۱ تا ۱۰,۰۰۰ سکه</div>
+                    </div>
+                </div>
+                <div class="medal-item" id="medalCardGold">
+                    <div style="font-size: 30px;">🥇</div>
+                    <div style="flex:1;">
+                        <div style="font-weight: 800; font-size: 15px;">
+                            مدال طلا (Gold)
+                            <span class="status-tag" id="tagGold" style="display: none;">فعلی</span>
+                        </div>
+                        <div style="font-size: 12px; color: #94a3b8;">شرط: بیشتر از ۱۰,۰۰۰ سکه</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        let tg = window.Telegram?.WebApp;
+        if(tg) tg.expand();
+
+        // وضعیت اولیه بازی
+        let defaultState = {
+            balance: 0,
+            energy: 1000,
+            maxEnergy: 1000,
+            tapPower: 1,
+            tapLevel: 1,
+            multitapCost: 200,    // قیمت پایه کلیک
+            energyCost: 500,      // قیمت پایه انرژی
+            currentMedal: 'Bronze',
+            refCode: generateRefCode(),
+            hasClaimedRef: false
+        };
+
+        // بارگیری داده‌های ذخیره‌شده از LocalStorage
+        let state = JSON.parse(localStorage.getItem('clickRushState')) || defaultState;
+
+        const tapBtn = document.getElementById('tapBtn');
+        const energyEl = document.getElementById('currentEnergy');
+        const energyBar = document.getElementById('energyBar');
+        const maxEnergyEl = document.getElementById('maxEnergy');
+
+        // ذخیره‌سازی وضعیت بازی در LocalStorage
+        function saveState() {
+            localStorage.setItem('clickRushState', JSON.stringify(state));
+        }
+
+        // به‌روزرسانی اولیه رابط کاربری
+        function initUI() {
+            document.getElementById('myRefCode').innerText = state.refCode;
+            document.getElementById('tapLvl').innerText = state.tapLevel;
+            document.getElementById('btnMultitap').innerText = `${state.multitapCost.toLocaleString()} سکه`;
+            document.getElementById('btnEnergy').innerText = `${state.energyCost.toLocaleString()} سکه`;
+
+            if (state.hasClaimedRef) {
+                document.getElementById('refInputContainer').style.display = 'none';
+                document.getElementById('refSuccessBadge').style.display = 'block';
+            }
+
+            updateBalanceUI();
+            updateEnergyUI();
+            checkMedalProgress();
+        }
+
+        // کلیک روی سکه اصلی
+        tapBtn.addEventListener('click', (e) => {
+            if (state.energy < state.tapPower) return;
+
+            state.balance += state.tapPower;
+            state.energy -= state.tapPower;
+
+            updateBalanceUI();
+            updateEnergyUI();
+            checkMedalProgress();
+            createFloatNum(e.clientX, e.clientY, state.tapPower);
+            saveState();
+
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        });
+
+        function updateBalanceUI() {
+            document.querySelectorAll('.global-balance').forEach(el => {
+                el.innerText = state.balance.toLocaleString();
+            });
+        }
+
+        function createFloatNum(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'float-num';
+            el.innerText = `+${text}`;
+            el.style.left = `${x - 15}px`;
+            el.style.top = `${y - 30}px`;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 650);
+        }
+
+        function updateEnergyUI() {
+            energyEl.innerText = state.energy.toLocaleString();
+            maxEnergyEl.innerText = state.maxEnergy.toLocaleString();
+            document.getElementById('maxEnergyVal').innerText = state.maxEnergy.toLocaleString();
+            const pct = (state.energy / state.maxEnergy) * 100;
+            energyBar.style.width = `${pct}%`;
+        }
+
+        // بررسی و آپدیت مدال‌ها
+        function checkMedalProgress() {
+            let newMedal = 'Bronze';
+            let icon = '🥉';
+
+            if (state.balance > 10000) {
+                newMedal = 'Gold';
+                icon = '🥇';
+            } else if (state.balance > 5000) {
+                newMedal = 'Silver';
+                icon = '🥈';
+            }
+
+            state.currentMedal = newMedal;
+            document.getElementById('currentMedalName').innerText = newMedal;
+            document.getElementById('currentMedalIcon').innerText = icon;
+            updateModalMedalCards();
+        }
+
+        // سوییچ تب‌ها
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            if(element) element.classList.add('active');
+        }
+
+        // مدیریت مودال مدال‌ها
+        function openMedalsModal(element) {
+            if(element) {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                element.classList.add('active');
+            }
+            updateModalMedalCards();
+            document.getElementById('medalsModal').classList.add('active');
+        }
+
+        function closeMedalsModal() {
+            document.getElementById('medalsModal').classList.remove('active');
+            document.getElementById('navMedals').classList.remove('active');
+            document.getElementById('navClick').classList.add('active');
+        }
+
+        function updateModalMedalCards() {
+            ['Bronze', 'Silver', 'Gold'].forEach(m => {
+                const card = document.getElementById(`medalCard${m}`);
+                const tag = document.getElementById(`tag${m}`);
+                if (state.currentMedal === m) {
+                    card.classList.add('current');
+                    tag.style.display = 'inline-block';
+                } else {
+                    card.classList.remove('current');
+                    tag.style.display = 'none';
+                }
+            });
+        }
+
+        // ارتقای Multitap با افزایش پلکانی ۱۰۰ سکه
+        function buyMultitap() {
+            if (state.balance >= state.multitapCost) {
+                state.balance -= state.multitapCost;
+                state.tapPower += 1;
+                state.tapLevel += 1;
+                state.multitapCost += 100; // افزایش ۱۰۰ تایی برای بار بعدی
+
+                document.getElementById('tapLvl').innerText = state.tapLevel;
+                document.getElementById('btnMultitap').innerText = `${state.multitapCost.toLocaleString()} سکه`;
+               
+                updateBalanceUI();
+                saveState();
+                alert('قدرت کلیک شما افزایش یافت!');
+            } else {
+                alert(`سکه کافی ندارید! (نیاز به ${state.multitapCost.toLocaleString()} سکه)`);
+            }
+        }
+
+        // ارتقای Max Energy با افزایش پلکانی ۲۰۰ سکه
+        function buyEnergyLimit() {
+            if (state.balance >= state.energyCost) {
+                state.balance -= state.energyCost;
+                state.maxEnergy += 500;
+                state.energy += 500;
+                state.energyCost += 200; // افزایش ۲۰۰ تایی برای بار بعدی
+
+                document.getElementById('btnEnergy').innerText = `${state.energyCost.toLocaleString()} سکه`;
+
+                updateBalanceUI();
+                updateEnergyUI();
+                saveState();
+                alert('حداکثر ظرفیت انرژی ۵۰۰ واحد افزایش یافت!');
+            } else {
+                alert(`سکه کافی ندارید! (نیاز به ${state.energyCost.toLocaleString()} سکه)`);
+            }
+        }
+
+        // تولید کد ۵ رقمی
+        function generateRefCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let result = '';
+            for (let i = 0; i < 5; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        function copyRefCode() {
+            navigator.clipboard.writeText(state.refCode);
+            alert('کد ۵ رقمی شما کپی شد: ' + state.refCode);
+        }
+
+        // ثبت کد رفرال دوست
+        function claimRefCode() {
+            if (state.hasClaimedRef) {
+                alert('شما قبلاً یک کد رفرال ثبت کرده‌اید!');
+                return;
+            }
+
+            const input = document.getElementById('friendCodeInput').value.trim().toUpperCase();
+           
+            if (input.length !== 5) {
+                alert('لطفاً یک کد ۵ رقمی معتبر وارد کنید!');
+                return;
+            }
+            if (input === state.refCode) {
+                alert('نمی‌توانید کد خودتان را وارد کنید!');
+                return;
+            }
+
+            state.hasClaimedRef = true;
+            state.balance += 500;
+           
+            updateBalanceUI();
+            checkMedalProgress();
+            saveState();
+
+            document.getElementById('refInputContainer').style.display = 'none';
+            document.getElementById('refSuccessBadge').style.display = 'block';
+
+            alert('تبریک! کد با موفقیت ثبت شد و ۵۰۰ سکه پاداش گرفتید.');
+        }
+
+        // بازسازی خودکار انرژی و ذخیره مداوم
+        setInterval(() => {
+            if (state.energy < state.maxEnergy) {
+                state.energy = Math.min(state.maxEnergy, state.energy + 3);
+                updateEnergyUI();
+                saveState();
+            }
+        }, 1000);
+
+        // اجرای اولیه UI
+        initUI();
+    </script>
+</body>
+</html>
